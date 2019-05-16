@@ -8,7 +8,7 @@ function bcp = best_camera_position(fp,d,l,ffc3)
 		bcp(1) = 90+atan(sqrt(x*x+y*y)/z)/pi*180;
 		bcp(2) = 180;
 		bcp(3) = 90;
-		%bcp(4) = atan(y/x)/pi*180;
+		bcp(4) = atan(y/x)/pi*180;
     elseif xydis<d
         disp('near');
         X = x-x*d/xydis;
@@ -20,7 +20,7 @@ function bcp = best_camera_position(fp,d,l,ffc3)
         bcp(1) = bcp123(1);
         bcp(2) = bcp123(2);
 		bcp(3) = bcp123(3);
-		%bcp(4) = atan(y/x)/pi*180;
+		bcp(4) = atan(y/x)/pi*180;
     else
         disp('mid');
         X = x-x*d/xydis;
@@ -32,6 +32,6 @@ function bcp = best_camera_position(fp,d,l,ffc3)
         bcp(1) = bcp123(1);
         bcp(2) = bcp123(2);
 		bcp(3) = bcp123(3);
-		%bcp(4) = atan(y/x)/pi*180;
+		bcp(4) = atan(y/x)/pi*180;
     end
 end

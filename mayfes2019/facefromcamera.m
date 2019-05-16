@@ -25,4 +25,5 @@ function ffc = facefromcamera(face,frameSize,phi3,theta4)
     Rz = [cos(tz) -sin(tz) 0; sin(tz) cos(tz) 0; 0 0 1];
     
     ffc =Ry*Rz*[z;-x;-y];
+    ffc(4)=dy * parameter_y;
 end
