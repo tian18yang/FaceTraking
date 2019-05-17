@@ -1,7 +1,7 @@
 function final_theta = finaladjustment(theta)
     final_theta(1)=theta(1)-15;
-    if final_theta(1)>160
-        final_theta(1)=160;
+    if final_theta(1)>140
+        final_theta(1)=140;
     end
     if final_theta(1)<0
         final_theta(1)=0;

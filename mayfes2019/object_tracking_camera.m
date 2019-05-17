@@ -12,6 +12,7 @@ runLoop = 1;
 numPts = 0;
 
 faceDetector = vision.CascadeObjectDetector();
+faceDetector.MergeThreshold=6;
 pointTracker = vision.PointTracker('MaxBidirectionalError', 2);
 cam = webcam();
 videoFrame = snapshot(cam);
@@ -28,6 +29,11 @@ fwrite(arduino,['H','3',ft(3),10]);
 fwrite(arduino,['H','2',ft(2),10]);
 fwrite(arduino,['H','1',ft(1),10]);
 
+tic;
+while(toc<4)
+    disp('wait');
+end
+
 ffclog=[];
 fplog=[];
 bcplog=[];
@@ -42,6 +48,36 @@ disp("start");
     while runLoop
         found = 0;
         originalvideoFrame = snapshot(cam);
+        
+            fwrite(arduino,'S');
+            
+            
+            while 1
+                
+                while arduino.BytesAvailable<2
+                    
+                end
+                index = fread(arduino,1,'uchar');
+                if index==201
+                    theta(1)=fread(arduino,1,'uchar')+15;
+                end
+                if index==202
+                    theta(2)=fread(arduino,1)+40;
+                end
+                if index==203
+                    theta(3)=90-fread(arduino,1);
+                end
+                if index==204
+                    theta4=fread(arduino,1)-90;
+                    break;
+                end
+            end
+            flushinput(arduino);
+        
+        
+        
+        
+        
         videoFrame = imresize(originalvideoFrame,0.5);
         videoFrame = fliplr(permute(videoFrame,[2,1,3]));
         frameSize = size(videoFrame);
@@ -136,72 +172,47 @@ disp("start");
         
         if found==1
             
-            phi = theta_to_phi(bcp(1:3));
+            phi = theta_to_phi(theta);
             
             ffc = facefromcamera(bboxPoints,frameSize,phi(3),theta4);
             fp  = face_position(phi,ffc,l,theta4);
             bcp = best_camera_position(fp,d,l,ffc(3));
             
+            %ffc2 = face_from_camera2(bboxPoints,frameSize);
+            
+            %xz = phi_to_xz(phi,l);
+            
+            
+            
             
         
-        
-            face_dy = (bboxPoints(1,2) + bboxPoints(2,2) + bboxPoints(3,2) + bboxPoints(4,2))/4-frameSize(1)/2;
-            face_dx = (bboxPoints(1,1) + bboxPoints(3,1))/2 - frameSize(2)/2;
-            if(face_dy<200)
-                face_dy=0;
-            end
+            %face_dy = (bboxPoints(1,2) + bboxPoints(2,2) + bboxPoints(3,2) + bboxPoints(4,2))/4-frameSize(1)/2;
+            %face_dx = (bboxPoints(1,1) + bboxPoints(3,1))/2 - frameSize(2)/2;
+            %if(face_dy<200)
+            %    face_dy=0;
+            %end
             %bcp(3)=theta(3)-face_dy*0.0001;
-            a=2;
+            
         
-            final_theta = finaladjustment(bcp);
-            
-            div_number = 100;
-            div_interval = (final_theta - theta)/div_number;
             
             
+            
+            %{
             for i = 1:div_number
-                fwrite(arduino,double(['H','1',theta(1)+div_interval(1)*i,20]));
-                fwrite(arduino,double(['H','2',theta(2)+div_interval(2)*i,20]));
-                fwrite(arduino,double(['H','3',theta(3)+div_interval(3)*i,20]));
-                fwrite(arduino,double(['H','4',90,20]));
+                fwrite(arduino,double(['H','1',theta(1)+div_interval(1)*i,4]));
+                fwrite(arduino,double(['H','2',theta(2)+div_interval(2)*i,4]));
+                fwrite(arduino,double(['H','3',theta(3)+div_interval(3)*i,8]));
+                fwrite(arduino,double(['H','4',theta(4)+div_interval(4)*i,8]));
             end
-            
-            
-            
-            
-            %fwrite(arduino,double(['H','1',final_theta(1),20]));
-            %fwrite(arduino,double(['H','2',final_theta(2),20]));
-            %fwrite(arduino,double(['H','3',final_theta(3),20]));
-            %fwrite(arduino,double(['H','4',90,20]));
-            
-            fplog=vertcat(fplog,fp);
-            ffclog = vertcat(ffclog,ffc.');
-            
-            theta
-            phi
-            
-            
-            Text = [fp(1) fp(2) fp(3) phi(3)];
-            videoFrame = insertText(videoFrame,[1 100;1 200;1 300;1 400],Text,'FontSize',30);
-            %videoFrame = insertText(videoFrame,[100,400],strcat('size = ',num2str(sizebbox)),'FontSize',30);
-            videoPlayer(videoFrame);
-            
-            
+            %}
             
             fwrite(arduino,'S');
-            tic;
             
             while 1
                 
                 while arduino.BytesAvailable<2
-                    if(toc>0.5)
-                        break;
-                    end
                 end
-                if(toc>0.5)
-                    break;
-                end
-                index = fread(arduino,1,'uchar')
+                index = fread(arduino,1,'uchar');
                 if index==201
                     theta(1)=fread(arduino,1,'uchar')+15;
                 end
@@ -215,8 +226,44 @@ disp("start");
                     theta4=fread(arduino,1)-90;
                     break;
                 end
-                flushinput(arduino);
             end
+            flushinput(arduino);
+            
+            theta;
+            
+            dx = (bboxPoints(1,1) + bboxPoints(3,1))/2 - frameSize(2)/2;
+            
+            bcp(4) = theta4 - dx * 0.02;
+            
+            final_theta = finaladjustment(bcp);
+            
+            div_number = 2;
+            interval = final_theta - finaladjustment(theta)
+            if norm(interval)>60
+                interval = interval/norm(interval)*60;
+            end
+            
+            fwrite(arduino,double(['H','1',final_theta(1),1+abs(interval(1)/div_number)]));
+            fwrite(arduino,double(['H','2',final_theta(2),1+abs(interval(2)/div_number)]));
+            fwrite(arduino,double(['H','3',final_theta(3),1+abs(interval(3)/div_number)]));
+            fwrite(arduino,double(['H','4',final_theta(4),1+abs(interval(4)/3)]));
+            
+            fplog=vertcat(fplog,fp);
+            ffclog = vertcat(ffclog,ffc.');
+            bcplog = vertcat(bcplog,bcp);
+            
+            theta;
+            phi;
+            
+            
+            Text = [frameSize(1) frameSize(2) dx phi(3)];
+            videoFrame = insertText(videoFrame,[1 100;1 200;1 300;1 400],Text,'FontSize',30);
+            %videoFrame = insertText(videoFrame,[100,400],strcat('size = ',num2str(sizebbox)),'FontSize',30);
+            videoPlayer(videoFrame);
+            
+            
+            
+            
             
         end
         

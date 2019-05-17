@@ -5,5 +5,12 @@ function phi=xyz_to_phi(xy_dis,z,l)
         phi(2)=90;
     else
         phi(2)=asin(phi2)/pi*180;
-	phi(3) = 90;
+    end
+    if z>0
+        phi(3) = 0;
+    else
+        phi(3) = -10;
+    end
+    %disp(phi);
+    %disp('a');
 end
